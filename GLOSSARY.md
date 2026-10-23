@@ -48,3 +48,11 @@ _Avoid_: 回退, workaround
 **工作区选择 (Workspace selection)**:
 写在工作区里、随 git 走、对该工作区内所有会话生效的解释器选择。
 _Avoid_: 项目配置, 局部配置
+
+**全局默认 (Global default)**:
+在插件设置页选定、对整台机器生效的解释器；优先级低于会话切换与工作区选择。
+_Avoid_: 默认 Python, 用户 Python
+
+**首次运行提示 (First-run prompt)**:
+插件第一次启用、且尚无全局默认时出现的一次性选择界面；选完或跳过后不再出现。
+_Avoid_: 向导, onboarding
