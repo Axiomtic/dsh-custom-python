@@ -63,17 +63,25 @@ window.__ModuleLoader__.load({
       }
     }
 
-    async function setValue(value) {
+    async function post(path, body) {
       try {
-        const response = await fetch('/custom-python/setting', {
+        const response = await fetch(path, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ value }),
+          body: JSON.stringify(body),
         })
         return await response.json()
       } catch {
         return null
       }
+    }
+
+    function setSetting(value) {
+      return post('/custom-python/setting', { value })
+    }
+
+    function setSession(sessionId, value) {
+      return post('/custom-python/session', { session: sessionId, value })
     }
 
     function useSnapshot(sessionId) {
@@ -156,7 +164,7 @@ window.__ModuleLoader__.load({
      * Trigger + menu. The menu is portalled so a clipping ancestor cannot hide it, and it
      * opens upward when the trigger sits low in the viewport (the composer case).
      */
-    function Dropdown({ t, state, failed, onApply, variant, prefix }) {
+    function Dropdown({ t, options, selected, failed, onApply, variant, prefix }) {
       const [open, setOpen] = useState(false)
       const [rect, setRect] = useState(null)
       const triggerRef = useRef(null)
@@ -180,9 +188,8 @@ window.__ModuleLoader__.load({
         }
       }, [open])
 
-      const options = state ? state.options : []
-      const selected = state ? state.selected : ''
-      const current = options.find((option) => option.value === selected)
+      const shown = options || []
+      const current = shown.find((option) => option.value === selected)
       const display = current ? current.label : failed ? t('loadFailed') : '—'
 
       const toggle = () => {
@@ -209,9 +216,9 @@ window.__ModuleLoader__.load({
             },
             onMouseDown: (event) => event.stopPropagation(),
           },
-          options.length === 0
+          shown.length === 0
             ? h('div', { className: 'dshcp-empty' }, t('loadFailed'))
-            : options.map((option) =>
+            : shown.map((option) =>
                 h(
                   'button',
                   {
@@ -270,11 +277,12 @@ window.__ModuleLoader__.load({
           h('span', { style: { fontSize: 13 } }, t('label')),
           h(Dropdown, {
             t,
-            state,
+            options: state ? state.global.options : [],
+            selected: state ? state.global.selected : '',
             failed,
             variant: 'field',
             onApply: async (value) => {
-              await setValue(value)
+              await setSetting(value)
               reload()
             },
           }),
@@ -285,13 +293,16 @@ window.__ModuleLoader__.load({
 
     function Badge({ t, sessionId }) {
       const { state, failed, reload } = useSnapshot(sessionId)
+      // Disabled means "as if the plugin were not installed": no badge either.
+      if (state && state.enabled === false) return null
       return h(Dropdown, {
         t,
-        state,
+        options: state ? state.session.options : [],
+        selected: state ? state.session.selected : '',
         failed,
         prefix: `${t('badgePrefix')}:`,
         onApply: async (value) => {
-          await setValue(value)
+          await setSession(sessionId, value)
           reload()
         },
       })
@@ -321,11 +332,12 @@ window.__ModuleLoader__.load({
           h('div', { style: { fontSize: 12, opacity: 0.75, marginBottom: 12 } }, t('onboardBody')),
           h(Dropdown, {
             t,
-            state,
+            options: state ? state.global.options : [],
+            selected: state ? state.global.selected : '',
             failed,
             variant: 'field',
             onApply: async (value) => {
-              await setValue(value)
+              await setSetting(value)
               setDone(true)
             },
           }),
