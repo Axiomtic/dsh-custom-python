@@ -104,8 +104,8 @@ window.__ModuleLoader__.load({
   color: var(--dsw-alias-label-secondary);
   font: inherit; font-size: 12px; line-height: 1; white-space: nowrap; cursor: pointer;
 }
-.dshcp-trigger:hover { background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); }
-.dshcp-trigger[data-open="true"] { background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); }
+.dshcp-trigger:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.dshcp-trigger[data-open="true"] { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .dshcp-trigger--field {
   height: 32px; min-width: 240px; justify-content: space-between;
   border-color: var(--dsw-alias-border-l1);
@@ -115,8 +115,8 @@ window.__ModuleLoader__.load({
 .dshcp-trigger--field:hover { border-color: var(--dsw-alias-border-l2); }
 .dshcp-menu {
   position: fixed; z-index: 2000; min-width: 220px; max-height: 320px; overflow: auto;
-  padding: 6px; border-radius: 12px;
-  background: var(--dsw-alias-bg-layer-1);
+  padding: 6px; border-radius: var(--dsw-radius-md, 12px);
+  background: var(--dsw-alias-bg-overlay);
   border: 1px solid var(--dsw-alias-border-l1);
   box-shadow: 0 16px 40px rgba(0,0,0,0.32);
   color: var(--dsw-alias-label-primary);
@@ -124,11 +124,11 @@ window.__ModuleLoader__.load({
 }
 .dshcp-item {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  width: 100%; padding: 8px 10px; border: 0; border-radius: 8px;
+  width: 100%; padding: 8px 10px; border: 0; border-radius: var(--dsw-radius-sm, 8px);
   background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
 }
-.dshcp-item:hover { background: var(--dsw-alias-bg-layer-2); }
-.dshcp-item[data-selected="true"] { color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-bg-layer-2); }
+.dshcp-item:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.dshcp-item[data-selected="true"] { color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-hover-solid); }
 .dshcp-check { opacity: 0; font-size: 11px; }
 .dshcp-item[data-selected="true"] .dshcp-check { opacity: 1; }
 .dshcp-empty { padding: 8px 10px; color: var(--dsw-alias-label-secondary); font-size: 12px; }
