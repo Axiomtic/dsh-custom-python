@@ -1,7 +1,17 @@
+# Dependencies and build output — this package ships its sources, so normally none of these exist.
 node_modules/
 dist/
 coverage/
+
+# Logs and local environment
 *.log
-.DS_Store
 .env
 .env.*
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
