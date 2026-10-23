@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Custom Python",
+    "description": "Route Python calls to a user-chosen interpreter instead of the bundled runtime."
+  }
+}

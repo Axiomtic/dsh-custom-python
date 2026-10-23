@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "自定义 Python 环境",
+    "description": "让 Python 调用优先使用用户指定的解释器，而不是内置 runtime。"
+  }
+}

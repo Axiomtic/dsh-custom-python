@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Custom Python">
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#1f2937"/>
+  <path d="M84 78h56a30 30 0 0 1 30 30v18h-34v-12a8 8 0 0 0-8-8h-36a8 8 0 0 0-8 8v18a8 8 0 0 0 8 8h30v22h-38a30 30 0 0 1-30-30v-24a30 30 0 0 1 30-30z" fill="#4b9cd3"/>
+  <path d="M172 178h-56a30 30 0 0 1-30-30v-18h34v12a8 8 0 0 0 8 8h36a8 8 0 0 0 8-8v-18a8 8 0 0 0-8-8h-30v-22h38a30 30 0 0 1 30 30v24a30 30 0 0 1-30 30z" fill="#f2c14e" opacity="0.92"/>
+  <circle cx="104" cy="102" r="7" fill="#0f172a"/>
+  <circle cx="152" cy="154" r="7" fill="#0f172a"/>
+</svg>

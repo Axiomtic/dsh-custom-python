@@ -41,10 +41,11 @@ DSH 内置 python（3.12.14，13 个固定包）本来是 office 工具链的契
 ```
 L1 会话内显式切换
 L2 工作区选择 .dsh/python.json
-L3 已激活环境 VIRTUAL_ENV / CONDA_PREFIX
-L4 工作区内 ./.venv
-L5 PATH 上第一个真实 python
-L6 内置 runtime
+L3 profile 默认 config.defaultInterpreter
+L4 已激活环境 VIRTUAL_ENV / CONDA_PREFIX
+L5 工作区内 ./.venv
+L6 PATH 上第一个真实 python
+L7 内置 runtime
 ```
 
 - **逐层取第一个非空层**，层内按 `realpath` 去重。

@@ -20,3 +20,15 @@ Blocked by: 03
 - spec 验收 4 通过：缺 `yaml` 时给 `pyyaml` 建议而非裸 traceback。
 - 诊断整体 ≤ 3 行，且不含解释性废话。
 - 非缺包失败不被包装。
+
+## Progress
+
+已随 ticket 03 落地（`lib/runner.js` + `renderText`）。实测：
+
+```
+Error: missing module 'yaml'
+interpreter: ...\dependencies\python\python.exe (3.12.14)
+fix: "...\dependencies\python\python.exe" -m pip install pyyaml
+```
+
+映射表含 15 条常见 import 名；未知名字原样透传不猜。

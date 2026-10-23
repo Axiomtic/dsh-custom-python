@@ -9,10 +9,11 @@
 ```
 L1 会话内显式切换
 L2 工作区选择（.dsh/python.json）
-L3 已激活环境（VIRTUAL_ENV / CONDA_PREFIX）
-L4 工作区内的 .venv
-L5 PATH 上第一个真实 python（剔除占位符与验证失败的）
-L6 内置 runtime
+L3 profile 默认（config.defaultInterpreter）
+L4 已激活环境（VIRTUAL_ENV / CONDA_PREFIX）
+L5 工作区内的 .venv
+L6 PATH 上第一个真实 python（剔除占位符与验证失败的）
+L7 内置 runtime
 ```
 
 每个候选在被采用前都要跑一次 `-c "import sys"`（带超时）：跑不通的（商店占位符、坏 venv、权限不足）直接剔除，
