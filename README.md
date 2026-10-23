@@ -64,6 +64,8 @@ git clone https://github.com/Axiomtic/dsh-custom-python.git
 
 设置 → **自定义 Python 环境** → **默认 Python**，只有一个下拉框。
 
+![设置页里的默认 Python 下拉框](docs/assets/settings.png)
+
 - 选一个解释器 → 之后所有会话都用它；
 - 选 **关闭自定义 Python** → `python` 工具从模型眼里消失，行为等同于插件没装。
 
@@ -73,6 +75,8 @@ git clone https://github.com/Axiomtic/dsh-custom-python.git
 
 输入框左下角有一个 `py Django 3.12.11` 徽标，点开向上弹出同一份候选列表，改的是**当前会话**。
 第一项是 `跟随全局默认（…）`，选它即清除覆盖。
+
+![输入框旁的徽标，菜单向上展开](docs/assets/composer.png)
 
 两个会话互不影响：A 选 conda、B 不选，B 走全局默认。
 
