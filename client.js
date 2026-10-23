@@ -403,24 +403,49 @@ window.__ModuleLoader__.load({
     return {
       inject: ['slots', 'locale'],
       apply(ctx) {
-        ctx.locale.register(NS, 'en', DICT.en)
-        ctx.locale.register(NS, 'zh', DICT.zh)
+        // A re-apply (HMR, or a reloaded bundle) must not throw on the second registration:
+        // namespace dictionaries are single-occupant. Keep the disposers and tolerate a
+        // namespace that a previous instance failed to release.
+        ctx.effect(() => {
+          const disposers = []
+          for (const [locale, dict] of Object.entries(DICT)) {
+            try {
+              disposers.push(ctx.locale.register(NS, locale, dict))
+            } catch {
+              /* a stale registration from a crashed instance; text is identical */
+            }
+          }
+          return () => {
+            for (const dispose of disposers.splice(0)) {
+              try {
+                dispose()
+              } catch {
+                /* already released */
+              }
+            }
+          }
+        })
+
         const t = ctx.locale.bind(NS)
 
-        ctx.slots.inject('conversation.input.left', () =>
-          ctx.slots.register({ name: 'conversation.input.left', id: 'custom-python-badge', order: 20 }, (props) =>
-            h(Badge, { t, sessionId: props && props.sessionId }),
-          ),
+        const mount = (slot, options, component) => {
+          ctx.slots.inject(slot, () => {
+            try {
+              return ctx.slots.register({ name: slot, ...options }, component)
+            } catch {
+              return undefined
+            }
+          })
+        }
+
+        mount('conversation.input.left', { id: 'custom-python-badge', order: 20 }, (props) =>
+          h(Badge, { t, sessionId: props && props.sessionId }),
         )
-        ctx.slots.inject('settings.section', () =>
-          ctx.slots.register({ name: 'settings.section', id: 'custom-python', order: 45, label: () => t('title') }, () =>
-            h(SettingsPage, { t }),
-          ),
+        mount('settings.section', { id: 'custom-python', order: 45, label: () => t('title') }, () =>
+          h(SettingsPage, { t }),
         )
-        ctx.slots.inject('shell.overlay', () =>
-          ctx.slots.register({ name: 'shell.overlay', id: 'custom-python-onboarding', order: 90 }, (props) =>
-            h(Onboarding, { t, sessionId: props && props.sessionId }),
-          ),
+        mount('shell.overlay', { id: 'custom-python-onboarding', order: 90 }, (props) =>
+          h(Onboarding, { t, sessionId: props && props.sessionId }),
         )
       },
     }
