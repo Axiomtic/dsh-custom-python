@@ -80,6 +80,19 @@ window.__ModuleLoader__.load({
       return post('/custom-python/setting', { value })
     }
 
+    /**
+     * The active locale, used only on the fallback path; a missing service must not break rendering.
+     * @param {any} ctx
+     * @returns {string}
+     */
+    function safeActiveLocale(ctx) {
+      try {
+        return ctx.locale.getLocale().active
+      } catch {
+        return 'en'
+      }
+    }
+
     function setSession(sessionId, value) {
       return post('/custom-python/session', { session: sessionId, value })
     }
@@ -388,6 +401,21 @@ window.__ModuleLoader__.load({
 
         const t = ctx.locale.bind(NS)
 
+        /**
+         * The service returns the key itself when it cannot resolve one — and it can, in a page
+         * that has been open across a code reload: a registration from the previous bundle
+         * instance is still the occupant of this namespace, so keys added since then are
+         * missing. Fall back to the dictionary shipped with *this* bundle rather than painting
+         * a bare `label` into the settings page.
+         * @param {string} key
+         */
+        const translate = (key) => {
+          const value = t(key)
+          if (value !== key) return value
+          const active = safeActiveLocale(ctx)
+          return DICT[active]?.[key] ?? DICT.en[key] ?? key
+        }
+
         const mount = (slot, options, component) => {
           ctx.slots.inject(slot, () => {
             try {
@@ -399,13 +427,13 @@ window.__ModuleLoader__.load({
         }
 
         mount('conversation.input.left', { id: 'custom-python-badge', order: 20 }, (props) =>
-          h(Badge, { t, sessionId: props && props.sessionId }),
+          h(Badge, { t: translate, sessionId: props && props.sessionId }),
         )
-        mount('settings.section', { id: 'custom-python', order: 45, label: () => t('title') }, () =>
-          h(SettingsPage, { t }),
+        mount('settings.section', { id: 'custom-python', order: 45, label: () => translate('title') }, () =>
+          h(SettingsPage, { t: translate }),
         )
         mount('shell.overlay', { id: 'custom-python-onboarding', order: 90 }, (props) =>
-          h(Onboarding, { t, sessionId: props && props.sessionId }),
+          h(Onboarding, { t: translate, sessionId: props && props.sessionId }),
         )
       },
     }
