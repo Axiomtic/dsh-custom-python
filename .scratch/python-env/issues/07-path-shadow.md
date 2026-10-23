@@ -20,3 +20,18 @@ Blocked by: 06, 03
 - spec 验收 6：开启时 `python -c "import sys;print(sys.executable)"` 输出用户环境；关闭后恢复。
 - 绝对路径调用行为与开启前逐字节一致。
 - 禁用插件后系统状态完全复原（无残留 PATH 项、无残留文件）。
+
+## Progress
+
+已实现（`lib/shadow.js`），代价与取舍记在 ADR-0005。实测链路：
+
+```
+use miniconda  → 新 shell 里 `python -c "import sys;print(sys.executable)"` = C:\Users\zhenx\miniconda3\python.exe
+reset          → 同一命令回到 "Python was not found"（商店占位符），证明 PATH 已复原
+```
+
+**踩到的坑**：影射写进 PATH 的目录会被下一轮解析当成 L6 的真实候选，导致 `reset` 永远回不到内置。
+修法是 `createShadow().basePath` 提供构造时的快照，解析器扫 PATH 只用快照。
+单测覆盖：前置、去重、替换、复原。
+
+**未做**：`py` 名字（需要额外 shim 可执行文件）；按会话隔离的影子（进程级本质决定）。

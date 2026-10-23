@@ -43,7 +43,9 @@ DSH 插件：让 harness 里的 Python 调用默认落到**你指定的解释器
 
 - 不接管 MCP server 的解释器。
 - office 工具链继续使用内置 runtime（那 13 个包是它的契约）。
-- `VIRTUAL_ENV` / `CONDA_PREFIX` 的继承尚未验证，未继承时 L3 恒为空，其余层级不受影响。
+- 影射是**进程级**的：裸命令 `python` 跟随最近一次解析结果，不按会话隔离；`python` 工具本身按会话。
+- `py` 不在影射范围（它是 Windows launcher，不在解释器目录里）。
+- `VIRTUAL_ENV` / `CONDA_PREFIX` 不会从你的终端继承进来（Host 进程启动时就定型了），因此 L4 实际很少命中。
 
 ## 开发
 
