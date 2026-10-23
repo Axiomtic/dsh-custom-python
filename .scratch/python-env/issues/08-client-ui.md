@@ -52,3 +52,16 @@ Blocked by: 03
 
 技术细节：徽标弹层走 `createPortal` 到 `body`（输入框行会裁剪溢出，这是第一版点不开的真因）；
 locale/slot 注册都带 disposer 并容忍重复（热重载曾抛 `namespace already has locale "en"`）。
+## Revision 2（交互形态第二轮）
+
+用户反馈：下拉不该是"按钮 → 弹出面板"，应该像 DSH 自己的权限/模型选择那样，
+点了直接贴着控件出选项；而且样式要和内置 UI 一致。
+
+改法：
+
+- 组件换成 **trigger + 贴着控件的菜单**（portal 定位，测量触发器的 rect）；
+- 在输入框里空间不足时**向上展开**（上拉），在设置页空间足够时向下展开；
+- 颜色全部走主题 token：`--dsw-alias-bg-overlay` / `--dsw-alias-border-l1` /
+  `--dsw-alias-label-primary` / `--dsw-alias-bg-layer-1` / `--dsw-alias-brand-primary`，
+  圆角、内边距、悬停态对齐内置选择器；
+- 选中项用品牌色 + 勾；点击外部、Esc、滚动、窗口缩放都会关闭。
