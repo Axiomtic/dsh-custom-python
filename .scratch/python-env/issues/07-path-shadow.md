@@ -26,7 +26,7 @@ Blocked by: 06, 03
 已实现（`lib/shadow.js`），代价与取舍记在 ADR-0005。实测链路：
 
 ```
-use miniconda  → 新 shell 里 `python -c "import sys;print(sys.executable)"` = C:\Users\zhenx\miniconda3\python.exe
+use miniconda  → 新 shell 里 `python -c "import sys;print(sys.executable)"` = C:\Users\you\miniconda3\python.exe
 reset          → 同一命令回到 "Python was not found"（商店占位符），证明 PATH 已复原
 ```
 
