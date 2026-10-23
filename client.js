@@ -114,21 +114,21 @@ window.__ModuleLoader__.load({
 }
 .dshcp-trigger--field:hover { border-color: var(--dsw-alias-border-l2); }
 .dshcp-menu {
-  position: fixed; z-index: 200; min-width: 220px; max-height: 320px; overflow: auto;
-  padding: 4px; border-radius: 10px;
-  background: var(--dsw-alias-bg-overlay);
+  position: fixed; z-index: 2000; min-width: 220px; max-height: 320px; overflow: auto;
+  padding: 6px; border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-1);
   border: 1px solid var(--dsw-alias-border-l1);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.32);
   color: var(--dsw-alias-label-primary);
   font-size: 13px;
 }
 .dshcp-item {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  width: 100%; padding: 7px 10px; border: 0; border-radius: 6px;
+  width: 100%; padding: 8px 10px; border: 0; border-radius: 8px;
   background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
 }
-.dshcp-item:hover { background: var(--dsw-alias-bg-layer-1); }
-.dshcp-item[data-selected="true"] { color: var(--dsw-alias-brand-primary); }
+.dshcp-item:hover { background: var(--dsw-alias-bg-layer-2); }
+.dshcp-item[data-selected="true"] { color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-bg-layer-2); }
 .dshcp-check { opacity: 0; font-size: 11px; }
 .dshcp-item[data-selected="true"] .dshcp-check { opacity: 1; }
 .dshcp-empty { padding: 8px 10px; color: var(--dsw-alias-label-secondary); font-size: 12px; }
@@ -160,20 +160,23 @@ window.__ModuleLoader__.load({
       const [open, setOpen] = useState(false)
       const [rect, setRect] = useState(null)
       const triggerRef = useRef(null)
+      const menuRef = useRef(null)
 
       useEffect(() => {
         if (!open) return undefined
-        const close = () => setOpen(false)
         const onKey = (event) => {
-          if (event.key === 'Escape') close()
+          if (event.key === 'Escape') setOpen(false)
         }
-        window.addEventListener('scroll', close, true)
-        window.addEventListener('resize', close)
+        const onDown = (event) => {
+          if (menuRef.current && menuRef.current.contains(event.target)) return
+          if (triggerRef.current && triggerRef.current.contains(event.target)) return
+          setOpen(false)
+        }
         document.addEventListener('keydown', onKey)
+        document.addEventListener('mousedown', onDown)
         return () => {
-          window.removeEventListener('scroll', close, true)
-          window.removeEventListener('resize', close)
           document.removeEventListener('keydown', onKey)
+          document.removeEventListener('mousedown', onDown)
         }
       }, [open])
 
@@ -197,6 +200,7 @@ window.__ModuleLoader__.load({
         menu = h(
           'div',
           {
+            ref: menuRef,
             className: 'dshcp-menu',
             style: {
               left: Math.max(8, left),
@@ -260,18 +264,22 @@ window.__ModuleLoader__.load({
         'div',
         { style: { padding: 16, fontSize: 13 } },
         h('h3', { style: { margin: '0 0 12px', fontSize: 15 } }, t('title')),
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } }, h('span', { style: { fontSize: 13 } }, t('label'))),
-        h('div', { style: { marginTop: 8 } }, h(Dropdown, {
-          t,
-          state,
-          failed,
-          variant: 'field',
-          onApply: async (value) => {
-            await setValue(value)
-            reload()
-          },
-        })),
-        h('div', { className: 'dshcp-hint' }, failed ? t('loadFailed') : t('hint')),
+        h(
+          'div',
+          { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 } },
+          h('span', { style: { fontSize: 13 } }, t('label')),
+          h(Dropdown, {
+            t,
+            state,
+            failed,
+            variant: 'field',
+            onApply: async (value) => {
+              await setValue(value)
+              reload()
+            },
+          }),
+        ),
+        failed ? h('div', { className: 'dshcp-hint' }, t('loadFailed')) : null,
       )
     }
 
