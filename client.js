@@ -242,6 +242,7 @@ window.__ModuleLoader__.load({
               'data-open': open ? 'true' : 'false',
               onClick: toggle,
               title: display,
+              style: variant === 'field' ? undefined : { maxWidth: 240, overflow: 'hidden' },
             },
             prefix ? h('span', { style: { opacity: 0.55 } }, prefix) : null,
             h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis' } }, display),
