@@ -1,13 +1,15 @@
 /**
- * Host half of the bundle: configuration, the resolver, the PATH shadow, the `python` tool,
- * and the HTTP routes the Client half renders.
+ * Host half of the bundle: configuration, the resolver, the `python` tool, and the HTTP
+ * routes the Client half renders.
+ *
+ * There is deliberately no PATH manipulation: the shell belongs to the user. If the agent
+ * chooses to run `python` in a shell it gets whatever the shell resolves, unchanged.
  */
 
 import { normalizeConfig } from './lib/config.js'
-import { createIo, bundledInterpreterPath } from './lib/io.js'
+import { createIo } from './lib/io.js'
 import { Resolver } from './lib/resolver.js'
 import { registerRoutes } from './lib/server.js'
-import { createShadow } from './lib/shadow.js'
 import { readSettings } from './lib/store.js'
 import { createPythonTool } from './lib/tool.js'
 
@@ -28,8 +30,7 @@ export function apply(ctx, config) {
   settings.enabled = stored.enabled !== false
   if (stored.defaultInterpreter) settings.defaultInterpreter = stored.defaultInterpreter
 
-  const shadow = createShadow()
-  const io = createIo({ config: settings, basePath: shadow.basePath })
+  const io = createIo({ config: settings })
   const resolver = new Resolver({ config: settings, io })
   /** Per-session explicit choices; process-local and cleared on unload. */
   const sessions = new Map()
@@ -42,7 +43,7 @@ export function apply(ctx, config) {
   let disposeTool = null
   const setEnabled = (enabled) => {
     if (enabled && !disposeTool) {
-      const dispose = ctx.tools.register(createPythonTool({ ctx, settings, resolver, sessions, shadow }))
+      const dispose = ctx.tools.register(createPythonTool({ ctx, settings, resolver, sessions }))
       disposeTool = typeof dispose === 'function' ? dispose : () => {}
       return
     }
@@ -54,22 +55,14 @@ export function apply(ctx, config) {
       }
       disposeTool = null
       sessions.clear()
-      shadow.clear()
     }
   }
 
   setEnabled(settings.enabled)
-  registerRoutes({ ctx, settings, resolver, sessions, shadow, io, setEnabled })
-
-  // Shell usage tracks the global default from the start; per-session overrides never move it.
-  const bundled = bundledInterpreterPath(settings)
-  const initial = settings.enabled !== false ? settings.defaultInterpreter : undefined
-  if (initial && initial !== bundled) shadow.apply(initial)
-  else shadow.clear()
+  registerRoutes({ ctx, settings, resolver, sessions, io, setEnabled })
 
   ctx.effect(() => () => {
     sessions.clear()
     resolver.invalidate()
-    shadow.clear()
   })
 }

@@ -1,5 +1,8 @@
 # 影射用进程级 PATH 前缀，而不是替换 shell provider
 
+Status: superseded by ADR-0006
+
+
 Spike（ticket 06）确认了两条硬约束：`ctx.shell` 不能被包装（Cordis 的 `Service` 构造即 `provide`，
 重复注册直接抛 `service "shell" has been registered`），而 `subprocess-local` 在**每次 spawn 时**
 实时读取 Host 的 `process.env.PATH`（`scrubbedParentEnv()` 无缓存，只剥离 `*TOKEN*`/`*SECRET*` 与 `DSH_*`）。
