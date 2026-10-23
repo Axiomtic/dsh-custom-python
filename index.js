@@ -4,7 +4,7 @@
  */
 
 import { normalizeConfig } from './lib/config.js'
-import { createIo } from './lib/io.js'
+import { createIo, bundledInterpreterPath } from './lib/io.js'
 import { Resolver } from './lib/resolver.js'
 import { registerRoutes } from './lib/server.js'
 import { createShadow } from './lib/shadow.js'
@@ -60,6 +60,12 @@ export function apply(ctx, config) {
 
   setEnabled(settings.enabled)
   registerRoutes({ ctx, settings, resolver, sessions, shadow, io, setEnabled })
+
+  // Shell usage tracks the global default from the start; per-session overrides never move it.
+  const bundled = bundledInterpreterPath(settings)
+  const initial = settings.enabled !== false ? settings.defaultInterpreter : undefined
+  if (initial && initial !== bundled) shadow.apply(initial)
+  else shadow.clear()
 
   ctx.effect(() => () => {
     sessions.clear()
