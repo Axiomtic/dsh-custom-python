@@ -38,3 +38,17 @@ Blocked by: 03
 
 **未做**：徽标里的会话 id 由 `snapshot` 回传（`state.session`），目前 UI 切换写的是 `process` 键，
 工具侧按"字面 id 优先、`process` 兜底"读取（`lib/session.js`）。真按会话隔离要等拿到 slot 的 session prop。
+
+## Revision（用户反馈后重做）
+
+第一版是"每行两个按钮 + 点开弹层"，用户反馈：徽标点不开、默认改不了、路径不直观、交互太碎。
+
+重做后只剩**一个下拉框**，出现在三个位置（设置页 / 徽标弹层 / 首次运行提示）：
+
+- 选项 = 关闭自定义 Python（使用内置） + 全部可用解释器，标签形如 conda · Django 3.12.11；
+- **选中即生效**，没有"应用"按钮，也没有"本会话使用"这类第二动作；
+- 关闭 的真实语义：撤销 `python` 工具注册 + 清除 PATH 影射，等同插件不存在（实测 `unknown tool "python"`）；
+- 默认值以"显式指定"进入 L1，压得过工作区文件 —— 用户选了就必须生效。
+
+技术细节：徽标弹层走 `createPortal` 到 `body`（输入框行会裁剪溢出，这是第一版点不开的真因）；
+locale/slot 注册都带 disposer 并容忍重复（热重载曾抛 `namespace already has locale "en"`）。

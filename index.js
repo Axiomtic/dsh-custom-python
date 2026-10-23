@@ -23,18 +23,43 @@ export const inject = ['tools', 'agents', 'workingDirectory']
  */
 export function apply(ctx, config) {
   const settings = normalizeConfig(config)
-  // The settings page writes `store`, which outranks the hand-edited Loader row.
   const stored = readSettings()
+  // The settings page writes `store`; "关闭自定义 Python" is `enabled: false`.
+  settings.enabled = stored.enabled !== false
   if (stored.defaultInterpreter) settings.defaultInterpreter = stored.defaultInterpreter
 
   const shadow = createShadow()
   const io = createIo({ config: settings, basePath: shadow.basePath })
   const resolver = new Resolver({ config: settings, io })
-  /** Session-scoped explicit choices (L1); process-local and cleared on unload. */
+  /** Per-session explicit choices; process-local and cleared on unload. */
   const sessions = new Map()
 
-  ctx.tools.register(createPythonTool({ ctx, settings, resolver, sessions, shadow }))
-  registerRoutes({ ctx, settings, resolver, sessions, shadow, io })
+  /**
+   * The tool's presence *is* the feature: withdrawing it while disabled is what makes the
+   * plugin behave as if it were not installed.
+   * @type {null | (() => void)}
+   */
+  let disposeTool = null
+  const setEnabled = (enabled) => {
+    if (enabled && !disposeTool) {
+      const dispose = ctx.tools.register(createPythonTool({ ctx, settings, resolver, sessions, shadow }))
+      disposeTool = typeof dispose === 'function' ? dispose : () => {}
+      return
+    }
+    if (!enabled && disposeTool) {
+      try {
+        disposeTool()
+      } catch {
+        /* already withdrawn */
+      }
+      disposeTool = null
+      sessions.clear()
+      shadow.clear()
+    }
+  }
+
+  setEnabled(settings.enabled)
+  registerRoutes({ ctx, settings, resolver, sessions, shadow, io, setEnabled })
 
   ctx.effect(() => () => {
     sessions.clear()

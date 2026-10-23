@@ -1,14 +1,10 @@
 /**
- * Client half: the composer badge, the settings page, and the first-run prompt.
+ * Client half: one select, three seats.
  *
- * Everything that reads the filesystem or resolves an interpreter stays on the Host; this
- * module only renders `/custom-python/*` snapshots and posts user actions back.
- *
- * Two rendering constraints shaped this file:
- * - the composer row clips overflow, so the picker is rendered through a portal on `body`
- *   (falling back to fixed positioning when `react-dom` is not in the module table);
- * - the slot supplies the real `sessionId`, so a switch made here applies to the same
- *   session the tool resolves for.
+ * The settings page, the composer badge and the first-run prompt all render the same
+ * `PythonSelect`, because the interaction is a single decision: which interpreter is the
+ * default, or "关闭自定义 Python" to behave as if the plugin were not installed. Picking a
+ * value takes effect immediately — there is no separate save, no per-session switch.
  */
 
 window.__ModuleLoader__.load({
@@ -16,7 +12,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react')
     const h = React.createElement
-    const { useCallback, useEffect, useRef, useState } = React
+    const { useCallback, useEffect, useState } = React
     const ReactDOM = (() => {
       try {
         return require('react-dom')
@@ -31,38 +27,26 @@ window.__ModuleLoader__.load({
       en: {
         badgePrefix: 'py',
         title: 'Python environment',
-        current: 'current',
-        use: 'Use here',
-        setDefault: 'Make default',
-        clearDefault: 'Clear default',
-        defaultLabel: 'Default',
-        none: 'No default yet',
+        label: 'Default Python',
+        hint: 'Takes effect immediately. Choose “关闭自定义 Python” to use the bundled runtime and hide this plugin’s tool.',
+        apply: 'Apply',
         skip: 'Skip',
-        onboardTitle: 'Choose a default Python',
-        onboardBody: 'Route Python calls to your own interpreter instead of the bundled runtime. Pick one now, or skip and choose later in settings.',
-        noCandidates: 'No interpreter found yet.',
-        unusable: 'cannot start',
-        loadFailed: 'Could not read the Python state. Retry.',
+        onboardTitle: 'Choose a Python environment',
+        onboardBody: 'Python calls can use your own interpreter instead of the bundled runtime. Pick one now; you can change it any time in settings.',
+        loadFailed: 'Could not read the Python state.',
         retry: 'Retry',
-        refreshing: 'Refreshing…',
       },
       zh: {
         badgePrefix: 'py',
         title: 'Python 环境',
-        current: '当前',
-        use: '本会话使用',
-        setDefault: '设为默认',
-        clearDefault: '清除默认',
-        defaultLabel: '默认',
-        none: '尚未设置默认',
+        label: '默认 Python',
+        hint: '选完立即生效。选“关闭自定义 Python”即回到内置 runtime，并让本插件的工具消失。',
+        apply: '应用',
         skip: '跳过',
-        onboardTitle: '选择一个默认 Python',
-        onboardBody: '让 Python 调用走你自己的解释器，而不是内置 runtime。现在选一个，或者跳过、之后在设置里选。',
-        noCandidates: '还没有发现解释器。',
-        unusable: '无法启动',
-        loadFailed: '读不到 Python 状态，重试一次。',
+        onboardTitle: '选择一个 Python 环境',
+        onboardBody: 'Python 调用可以走你自己的解释器，而不是内置 runtime。现在选一个，之后也能在设置里改。',
+        loadFailed: '读不到 Python 状态。',
         retry: '重试',
-        refreshing: '刷新中…',
       },
     }
 
@@ -77,45 +61,50 @@ window.__ModuleLoader__.load({
       }
     }
 
-    async function post(path, body) {
+    async function setValue(value) {
       try {
-        const response = await fetch(path, {
+        const response = await fetch('/custom-python/setting', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(body ?? {}),
+          body: JSON.stringify({ value }),
         })
-        const payload = await response.json().catch(() => null)
-        return { ok: response.ok, payload }
-      } catch (error) {
-        return { ok: false, payload: { error: String(error && error.message ? error.message : error) } }
+        return await response.json()
+      } catch {
+        return null
       }
     }
 
-    function useSnapshot(sessionId, poll) {
+    function useState_(sessionId) {
       const [state, setState] = useState(null)
       const [failed, setFailed] = useState(false)
-      const [busy, setBusy] = useState(false)
       const reload = useCallback(() => {
-        setBusy(true)
-        getState(sessionId)
-          .then((next) => {
-            setFailed(next === null)
-            if (next) setState(next)
-          })
-          .finally(() => setBusy(false))
+        getState(sessionId).then((next) => {
+          setFailed(next === null)
+          if (next) setState(next)
+        })
       }, [sessionId])
-
       useEffect(() => {
         reload()
-        if (!poll) return undefined
-        const timer = setInterval(reload, 15000)
-        return () => clearInterval(timer)
-      }, [poll, reload])
-
-      return { state, failed, busy, reload }
+      }, [reload])
+      return { state, failed, reload }
     }
 
     const styles = {
+      row: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+      label: { fontSize: 13, fontWeight: 600 },
+      select: {
+        font: 'inherit',
+        fontSize: 13,
+        padding: '5px 10px',
+        borderRadius: 6,
+        border: '1px solid rgba(127,127,127,0.45)',
+        background: 'transparent',
+        color: 'inherit',
+        minWidth: 220,
+        maxWidth: 420,
+        cursor: 'pointer',
+      },
+      hint: { fontSize: 11, opacity: 0.6, marginTop: 8 },
       pill: {
         display: 'inline-flex',
         alignItems: 'center',
@@ -134,11 +123,9 @@ window.__ModuleLoader__.load({
         whiteSpace: 'nowrap',
       },
       panel: {
-        width: 460,
+        width: 420,
         maxWidth: 'calc(100vw - 24px)',
-        maxHeight: '60vh',
-        overflow: 'auto',
-        padding: 14,
+        padding: 16,
         borderRadius: 12,
         border: '1px solid rgba(127,127,127,0.35)',
         background: 'var(--dsh-bg-elevated, Canvas)',
@@ -147,47 +134,19 @@ window.__ModuleLoader__.load({
         font: 'inherit',
         fontSize: 13,
       },
-      row: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '9px 10px',
-        borderRadius: 8,
-        border: '1px solid transparent',
-      },
-      rowButton: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '9px 10px',
-        borderRadius: 8,
-        border: '1px solid rgba(127,127,127,0.25)',
-        background: 'transparent',
-        color: 'inherit',
-        font: 'inherit',
-        fontSize: 13,
-        textAlign: 'left',
-        width: '100%',
-        cursor: 'pointer',
-      },
-      name: { fontWeight: 600 },
-      meta: { fontSize: 11, opacity: 0.65 },
       action: {
         font: 'inherit',
-        fontSize: 11,
-        padding: '3px 8px',
+        fontSize: 12,
+        padding: '4px 10px',
         borderRadius: 6,
         border: '1px solid currentColor',
         background: 'transparent',
         color: 'inherit',
         cursor: 'pointer',
         opacity: 0.85,
-        whiteSpace: 'nowrap',
       },
-      error: { color: '#e06c75', fontSize: 12, marginBottom: 8 },
     }
 
-    /** Render into `document.body` so a clipping ancestor cannot hide the panel. */
     function Overlay({ children, onClose }) {
       useEffect(() => {
         const onKey = (event) => {
@@ -200,135 +159,81 @@ window.__ModuleLoader__.load({
       const layer = h(
         'div',
         {
-          style: { position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(0,0,0,0.35)' },
+          style: { position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
           onMouseDown: (event) => {
             if (event.target === event.currentTarget) onClose()
           },
         },
-        h('div', { style: { position: 'absolute', left: 24, top: 80 } }, children),
+        children,
       )
-
       return ReactDOM && ReactDOM.createPortal ? ReactDOM.createPortal(layer, document.body) : layer
     }
 
-    function candidatesOf(state) {
-      return (state && state.candidates) || []
-    }
-
-    function CandidateRow({ candidate, t, current, onDefault, onUse }) {
-      const meta = [candidate.kind, candidate.layer].filter(Boolean).join(' · ')
-      return h(
-        'div',
-        { style: { ...styles.row, justifyContent: 'space-between', opacity: candidate.usable ? 1 : 0.5 } },
-        h(
-          'div',
-          { style: { flex: 1, minWidth: 0 }, title: candidate.path },
-          h('div', { style: styles.name }, candidate.display || candidate.path),
-          h('div', { style: styles.meta }, candidate.usable ? meta : `${meta} · ${t('unusable')}`),
-        ),
-        candidate.path === current ? h('span', { style: styles.meta }, t('current')) : null,
-        candidate.usable
-          ? h('button', { type: 'button', style: styles.action, onClick: () => onDefault(candidate.path) }, t('setDefault'))
-          : null,
-        candidate.usable
-          ? h('button', { type: 'button', style: styles.action, onClick: () => onUse(candidate.path) }, t('use'))
-          : null,
-      )
-    }
-
-    function Panel({ t, state, failed, busy, reload, sessionId, onClose, mode }) {
-      const [notice, setNotice] = useState(null)
-      const onDefault = useCallback(
-        async (path) => {
-          const result = await post('/custom-python/default', { interpreter: path })
-          if (!result.ok) return setNotice(result.payload?.error || t('loadFailed'))
-          setNotice(null)
-          reload()
-        },
-        [reload, t],
-      )
-      const onUse = useCallback(
-        async (path) => {
-          const result = await post('/custom-python/use', { interpreter: path, session: sessionId })
-          if (!result.ok) return setNotice(result.payload?.error || t('loadFailed'))
-          setNotice(null)
-          reload()
-          if (mode === 'onboarding') onClose()
-        },
-        [onClose, mode, reload, sessionId, t],
-      )
-      const current = state && state.resolution && state.resolution.status === 'resolved' ? state.resolution.interpreter : null
-      const candidates = candidatesOf(state)
+    /** The single interactive element this plugin owns. */
+    function PythonSelect({ t, state, failed, onApply, reload }) {
+      const [value, setValue] = useState(null)
+      const current = value === null ? (state ? state.selected : '') : value
+      const disabled = failed || !state
 
       return h(
         'div',
-        { style: styles.panel },
-        h('div', { style: { fontWeight: 600, marginBottom: 4 } }, mode === 'onboarding' ? t('onboardTitle') : t('title')),
-        mode === 'onboarding' ? h('div', { style: { ...styles.meta, marginBottom: 10 } }, t('onboardBody')) : null,
+        null,
         h(
           'div',
-          { style: { ...styles.meta, marginBottom: 10 } },
-          state && state.defaultDisplay ? `${t('defaultLabel')}: ${state.defaultDisplay}` : t('none'),
-        ),
-        failed ? h('div', { style: styles.error }, t('loadFailed')) : null,
-        notice ? h('div', { style: styles.error }, notice) : null,
-        candidates.length === 0 ? h('div', { style: styles.meta }, t('noCandidates')) : null,
-        candidates.map((candidate, index) =>
-          h(CandidateRow, {
-            key: `${candidate.path}-${index}`,
-            candidate,
-            t,
-            current,
-            onDefault,
-            onUse,
-          }),
-        ),
-        h(
-          'div',
-          { style: { display: 'flex', gap: 8, justifyContent: 'space-between', marginTop: 12 } },
-          h('button', { type: 'button', style: styles.action, onClick: reload, disabled: busy }, busy ? t('refreshing') : t('retry')),
+          { style: styles.row },
+          h('span', { style: styles.label }, t('label')),
           h(
-            'div',
-            { style: { display: 'flex', gap: 8 } },
-            state && state.defaultInterpreter
-              ? h(
-                  'button',
-                  {
-                    type: 'button',
-                    style: styles.action,
-                    onClick: async () => {
-                      await post('/custom-python/default', { interpreter: null })
-                      reload()
-                    },
-                  },
-                  t('clearDefault'),
-                )
-              : null,
-            h('button', { type: 'button', style: styles.action, onClick: onClose }, mode === 'onboarding' ? t('skip') : '✕'),
+            'select',
+            {
+              style: styles.select,
+              value: current,
+              disabled,
+              onChange: (event) => {
+                const next = event.target.value
+                setValue(next)
+                onApply(next)
+              },
+            },
+            (state ? state.options : []).map((option) =>
+              h('option', { key: option.value, value: option.value }, option.label),
+            ),
           ),
         ),
+        h('div', { style: styles.hint }, failed ? t('loadFailed') : t('hint')),
       )
     }
 
-    function Badge(props) {
-      const t = props.t
-      const sessionId = props.sessionId
-      const { state, failed, busy, reload } = useSnapshot(sessionId, true)
+    function SettingsPage({ t }) {
+      const { state, failed, reload } = useState_(undefined)
+      return h(
+        'div',
+        { style: { padding: 16, fontSize: 13 } },
+        h('h3', { style: { margin: '0 0 12px', fontSize: 15 } }, t('title')),
+        h(PythonSelect, {
+          t,
+          state,
+          failed,
+          reload,
+          onApply: async (value) => {
+            await setValue(value)
+            reload()
+          },
+        }),
+      )
+    }
+
+    function Badge({ t, sessionId }) {
+      const { state, failed, reload } = useState_(sessionId)
       const [open, setOpen] = useState(false)
-      const label = state && state.resolution ? state.resolution.label : null
-      const text = label && label.display ? label.display : state && state.resolution && state.resolution.version ? state.resolution.version : '—'
+      const label = state && state.resolution && state.resolution.label ? state.resolution.label.display : null
+      const text = state && !state.enabled ? 'off' : label || '—'
 
       return h(
         'div',
         { style: { display: 'inline-flex' } },
         h(
           'button',
-          {
-            type: 'button',
-            style: styles.pill,
-            title: state && state.resolution ? state.resolution.interpreter || '' : '',
-            onClick: () => setOpen(true),
-          },
+          { type: 'button', style: styles.pill, onClick: () => setOpen(true), title: t('title') },
           h('span', { style: { opacity: 0.6 } }, `${t('badgePrefix')}:`),
           h('span', null, text),
         ),
@@ -336,83 +241,84 @@ window.__ModuleLoader__.load({
           ? h(
               Overlay,
               { onClose: () => setOpen(false) },
-              h(Panel, { t, state, failed, busy, reload, sessionId, mode: 'picker', onClose: () => setOpen(false) }),
+              h(
+                'div',
+                { style: styles.panel },
+                h(PythonSelect, {
+                  t,
+                  state,
+                  failed,
+                  reload,
+                  onApply: async (value) => {
+                    await setValue(value)
+                    reload()
+                    setOpen(false)
+                  },
+                }),
+                h(
+                  'div',
+                  { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 12 } },
+                  h('button', { type: 'button', style: styles.action, onClick: () => setOpen(false) }, '✕'),
+                ),
+              ),
             )
           : null,
       )
     }
 
-    function SettingsPage(props) {
-      const t = props.t
-      const { state, failed, busy, reload } = useSnapshot(undefined, false)
-      const [open, setOpen] = useState(false)
-      const candidates = candidatesOf(state)
-      const current = state && state.resolution && state.resolution.status === 'resolved' ? state.resolution.interpreter : null
-
-      return h(
-        'div',
-        { style: { padding: 16, fontSize: 13 } },
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 } }, h('h3', { style: { margin: 0, fontSize: 15 } }, t('title'))),
-        h(
-          'div',
-          { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 } },
-          h('span', { style: { fontSize: 13 } }, state && state.defaultDisplay ? `${t('defaultLabel')}: ${state.defaultDisplay}` : t('none')),
-          h('button', { type: 'button', style: styles.action, onClick: () => setOpen(true) }, t('setDefault')),
-        ),
-        failed ? h('div', { style: styles.error }, t('loadFailed')) : null,
-        candidates.length === 0
-          ? h('div', { style: styles.meta }, t('noCandidates'))
-          : candidates.map((candidate, index) =>
-              h(CandidateRow, {
-                key: `${candidate.path}-${index}`,
-                candidate,
-                t,
-                current,
-                onDefault: async (path) => {
-                  await post('/custom-python/default', { interpreter: path })
-                  reload()
-                },
-                onUse: async (path) => {
-                  await post('/custom-python/use', { interpreter: path })
-                  reload()
-                },
-              }),
-            ),
-        open
-          ? h(
-              Overlay,
-              { onClose: () => setOpen(false) },
-              h(Panel, { t, state, failed, busy, reload, sessionId: undefined, mode: 'picker', onClose: () => setOpen(false) }),
-            )
-          : null,
-      )
-    }
-
-    function Onboarding(props) {
-      const t = props.t
-      const { state, failed, busy, reload } = useSnapshot(props.sessionId, false)
+    function Onboarding({ t, sessionId }) {
+      const { state, failed, reload } = useState_(sessionId)
       const [done, setDone] = useState(false)
       if (done || !state || !state.firstRun) return null
       return h(
         Overlay,
         { onClose: () => setDone(true) },
-        h(Panel, { t, state, failed, busy, reload, sessionId: props.sessionId, mode: 'onboarding', onClose: () => setDone(true) }),
+        h(
+          'div',
+          { style: styles.panel },
+          h('div', { style: { fontWeight: 600, fontSize: 15, marginBottom: 6 } }, t('onboardTitle')),
+          h('div', { style: { fontSize: 12, opacity: 0.75, marginBottom: 12 } }, t('onboardBody')),
+          h(PythonSelect, {
+            t,
+            state,
+            failed,
+            reload,
+            onApply: async (value) => {
+              await setValue(value)
+              setDone(true)
+            },
+          }),
+          h(
+            'div',
+            { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 12 } },
+            h(
+              'button',
+              {
+                type: 'button',
+                style: styles.action,
+                onClick: async () => {
+                  await fetch('/custom-python/skip', { method: 'POST' }).catch(() => null)
+                  setDone(true)
+                },
+              },
+              t('skip'),
+            ),
+          ),
+        ),
       )
     }
 
     return {
       inject: ['slots', 'locale'],
       apply(ctx) {
-        // A re-apply (HMR, or a reloaded bundle) must not throw on the second registration:
-        // namespace dictionaries are single-occupant. Keep the disposers and tolerate a
-        // namespace that a previous instance failed to release.
+        // A re-apply (HMR, or a reloaded bundle) must not throw on the second registration.
         ctx.effect(() => {
           const disposers = []
           for (const [locale, dict] of Object.entries(DICT)) {
             try {
               disposers.push(ctx.locale.register(NS, locale, dict))
             } catch {
-              /* a stale registration from a crashed instance; text is identical */
+              /* stale registration from a crashed instance; text is identical */
             }
           }
           return () => {

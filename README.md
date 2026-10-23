@@ -25,10 +25,17 @@ DSH 插件：让 harness 里的 Python 调用默认落到**你指定的解释器
 
 ## 配置
 
+设置面板里只有一个下拉框：**默认 Python**。选完立即生效，没有保存按钮。
+
+- 选某个解释器 → 所有 Python 调用都用它（`conda · Django 3.12.11` 这种显示，而不是绝对路径）；
+- 选 **关闭自定义 Python** → 工具从模型眼里消失、PATH 影射撤销，效果与禁用插件一致。
+
+设置存在 `$DSH_HOME/custom-python/settings.json`，优先于 Loader 行配置：
+
 ```yaml
 - id: custom-python
   config:
-    defaultInterpreter: C:\Users\you\miniconda3\python.exe
+    defaultInterpreter: C:\Users\you\miniconda3\python.exe   # 设置页未选时的兜底
     shadow: true
     autoInstall: false
 ```
