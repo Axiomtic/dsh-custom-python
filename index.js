@@ -34,7 +34,7 @@ export function apply(ctx, config) {
   const sessions = new Map()
 
   ctx.tools.register(createPythonTool({ ctx, settings, resolver, sessions, shadow }))
-  registerRoutes({ ctx, settings, resolver, sessions, shadow })
+  registerRoutes({ ctx, settings, resolver, sessions, shadow, io })
 
   ctx.effect(() => () => {
     sessions.clear()
